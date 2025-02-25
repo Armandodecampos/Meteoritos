@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Nave</title>
+    <link rel="stylesheet" href="estilo.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+
+        #telaInicial, #gameOverScreen {
+            position: absolute;
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+        }
+
+        .btn {
+            font-size: 24px;
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background-color: yellow;
+            color: black;
+            font-weight: bold;
+            border-radius:5px;
+        }
+
+        #gameOverScreen {
+            display: none;
+        }
+
+        #canvas {
+            display: none;
+            border: none;
+            background-color: #000;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            background-image: url("https://www.transparenttextures.com/patterns/asfalt-light.png");
+            /* This is mostly intended for prototyping; please download the pattern and re-host for production environments. Thank you! */
+        }
+
+        #contador {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 20px;
+            color: yellow;
+            font-family: Arial, sans-serif;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="telaInicial">
+        <h1>Viajem veloz</h1>
+        <button class="btn" id="botaoJogar">Jogar</button>
+    </div>
+
+    <div id="gameOverScreen">
+        <h1>Fim de jogo</h1>
+        <button class="btn" id="botaoReiniciar">Voltar ao Menu</button>
+    </div>
+
+    <div id="contador">Pontuação: 0</div>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <audio id="musicaFundo" loop>
+  <source src="https://dl.dropbox.com/scl/fi/lysyakpaqv4a9i5mm3mhm/neon-metropolis-174468.mp3?rlkey=17g6liikz92pin19bmwzob8rk&st=0duaxpyp&dl=0" type="audio/mp3">
+  Seu navegador não suporta o elemento de áudio.
+</audio>
+<audio id="somTiro" preload="auto">
+  <source src="https://dl.dropbox.com/scl/fi/3phfbfakp56tbhzq6y561/laser-104024.mp3?rlkey=kgxpeovnv65gha704fibucp9t&st=g9wckia9&dl=0" type="audio/mp3">
+  Seu navegador não suporta o elemento de áudio.
+</audio>
+<audio id="somExplosao" preload="auto">
+  <source src="https://dl.dropbox.com/scl/fi/8a74deemc3yyjpuggwwkp/small-explosion-129477.mp3?rlkey=e6pqx25dk05364u061tbrvjni&st=etpbm3er&dl=0" type="audio/mp3">
+  Seu navegador não suporta o elemento de áudio.
+</audio>
+<audio id="somGameOver" preload="auto">
+  <source src="https://dl.dropbox.com/scl/fi/q81cd9v6a5aaxf56o3ont/explosion-game-over.mp3?rlkey=tokj71p7hibp24biuq0qy57cd&st=yqcuzmjg&dl=0" type="audio/mp3">
+  Seu navegador não suporta o elemento de áudio.
+</audio>
+<audio id="musicaMenu" loop preload="auto">
+  <source src="https://dl.dropbox.com/scl/fi/ok53v62w8c0s5fun6ruq4/game-menu-inicial.mp3?rlkey=u09vk46lfwdwyfxp32s3ulii1&st=cl2obtky&dl=0" type="audio/mp3">
+  Seu navegador não suporta o elemento de áudio.
+</audio>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+  document.getElementById("musicaMenu").play();
+  const telaInicial = document.getElementById("telaInicial");
+  const gameOverScreen = document.getElementById("gameOverScreen");
+  const botaoJogar = document.getElementById("botaoJogar");
+  const botaoReiniciar = document.getElementById("botaoReiniciar");
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const contador = document.getElementById("contador");
+
+  let nave, tiros, meteoritos, dificuldade, velocidadeBase, tempo, intervaloSpawn;
+  let intervaloTempo, spawnMeteoritos;
+  
+  // Carregar as imagens dos meteoritos
+const imgMeteorito1 = new Image();
+imgMeteorito1.src = 'https://dl.dropbox.com/scl/fi/ilq6q6jy18lxl20xf7rfr/meteorito_1.png?rlkey=1iq5canafgnpw9o03uxrql0m7&st=i1nrmigb&dl=0';
+
+const imgMeteorito2 = new Image();
+imgMeteorito2.src = 'https://dl.dropbox.com/scl/fi/924wek5gfhiks8rnpopj5/Meteorito_2.png?rlkey=h5wwckvfhfldn91skhexbrk9k&st=jn8n3ef3&dl=0';
+
+const imgMeteorito3 = new Image();
+imgMeteorito3.src = 'https://dl.dropbox.com/scl/fi/eykn1h672rzq22wq4widf/meteorito_3.png?rlkey=zg55j6dytmerfutkk34tni4ht&st=2j0qh9ys&dl=0';
+
+const imgMeteorito4 = new Image();
+imgMeteorito4.src = 'https://dl.dropbox.com/scl/fi/u16o490u0stcf6b4gjn5l/pngtree-metallic-ufo-flying-saucer-png-image_14239022.png?rlkey=ts72ui1eh6tc3uj9sdc7bnx11&st=0gfqvhfg&dl=0';
+
+  // Carregar a imagem da nave
+  const imgNave = new Image();
+  imgNave.src = 'https://dl.dropbox.com/scl/fi/gmp0rucz6al5ezutmj3gg/nave.png?rlkey=6fuoqnavc5oyw1q2q6ndsd163&st=gcram9e6&dl=0';
+
+  let velocidadeMinima = 1;
+  let velocidadeMaxima = 7;
+  let tempoDeCiclo = 60000; // 60 segundos
+  let tempoDeAumento = tempoDeCiclo / 2;
+  let tempoDeDiminuicao = tempoDeCiclo / 2;
+  let tempoAtual = 0;
+  let aumentandoVelocidade = true;
+
+  function iniciarJogo() {
+    document.getElementById("musicaMenu").pause();
+    telaInicial.style.display = "none";
+    gameOverScreen.style.display = "none";
+    canvas.style.display = "block";
+    contador.style.display = "block";
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    nave = { x: canvas.width / 2, y: canvas.height / 2, largura: 50, altura: 50 };
+    tiros = [];
+    meteoritos = [];
+    dificuldade = 1;
+    velocidadeBase = velocidadeMinima;
+    tempo = 0;
+    intervaloSpawn = 1000;
+    document.getElementById("musicaFundo").play();
+
+    // Atualiza a velocidade ao longo do tempo
+    setInterval(() => {
+        tempoAtual += 1000; // incrementa o tempo em 1 segundo
+
+        if (aumentandoVelocidade) {
+            velocidadeBase = velocidadeMinima + (velocidadeMaxima - velocidadeMinima) * (tempoAtual / tempoDeAumento);
+            if (tempoAtual >= tempoDeAumento) {
+                aumentandoVelocidade = false;
+                tempoAtual = tempoDeAumento;
+            }
+        } else {
+            velocidadeBase = velocidadeMaxima - (velocidadeMaxima - velocidadeMinima) * ((tempoAtual - tempoDeAumento) / tempoDeDiminuicao);
+            if (tempoAtual >= tempoDeCiclo) {
+                aumentandoVelocidade = true;
+                tempoAtual = 0;
+            }
+        }
+    }, 1000);
+
+    // Atualiza o contador e a dificuldade ao longo do tempo
+    intervaloTempo = setInterval(() => {
+        tempo += 1;
+        contador.textContent = `Pontuação: ${tempo}`;
+
+        if (intervaloSpawn > 300) {
+            intervaloSpawn -= 50;
+            clearInterval(spawnMeteoritos);
+            spawnMeteoritos = setInterval(criarMeteorito, intervaloSpawn);
+        }
+    }, 1000);
+
+    spawnMeteoritos = setInterval(criarMeteorito, intervaloSpawn);
+
+    tempoSpawnMeteorito4 = 0; // Inicialize o temporizador
+    
+    // Inicie o temporizador
+    setInterval(() => {
+        tempoSpawnMeteorito4 += 1000; // Incrementa o temporizador a cada segundo
+    }, 1000);
+
+    atualizar();
+}
+
+  function gameOver() {
+    clearInterval(intervaloTempo);
+    clearInterval(spawnMeteoritos);
+    telaInicial.style.display = "none";
+    canvas.style.display = "none";
+    gameOverScreen.style.display = "flex";
+    contador.style.display = "block"; // Exiba o contador
+    document.getElementById("musicaFundo").pause();
+    tocarSom("somGameOver");
+    document.getElementById("musicaMenu").play();
+  }
+
+  function desenharNave() {
+    let escala = 1 + (nave.y / canvas.height); // Calcule a escala com base na posição y da nave
+    escala = Math.min(2, escala); // Limite a escala para evitar que a nave cresça demais
+
+    ctx.drawImage(imgNave, 
+        nave.x - (nave.largura * escala) / 2, 
+        nave.y - (nave.altura * escala) / 2, 
+        nave.largura * escala, 
+        nave.altura * escala);
+}
+            function criarTiro() {
+                tiros.push({
+                    x: nave.x + nave.largura / 2,
+                    y: nave.y,
+                    velocidade: 5
+                });
+                 tocarSom("somTiro");
+            }
+
+
+// Adicione uma variável para controlar o tempo de spawn do imgMeteorito4
+let spawnMeteorito4 = false;
+
+function criarMeteorito() {
+    let tamanho = Math.random() * 20 + 10; // Tamanho inicial do meteorito
+    let velocidade = Math.random() * 2 + velocidadeBase;
+    let tipoMeteorito;
+    
+    // Aumente a probabilidade de o imgMeteorito4 ser escolhido
+    if (spawnMeteorito4 && Math.random() < 0.07) { // 5% de chance de escolher o imgMeteorito4
+        tipoMeteorito = 3; // Escolha o imgMeteorito4
+    } else {
+        tipoMeteorito = Math.floor(Math.random() * 3); // Escolhe aleatoriamente entre 0, 1 e 2
+    }
+    
+    let imagemSelecionada;
+
+    // Atribuir a imagem do meteorito com base no valor aleatório
+    if (tipoMeteorito === 0) {
+        imagemSelecionada = imgMeteorito1;
+    } else if (tipoMeteorito === 1) {
+        imagemSelecionada = imgMeteorito2;
+    } else if (tipoMeteorito === 2) {
+        imagemSelecionada = imgMeteorito3;
+    } else {
+        imagemSelecionada = imgMeteorito4;
+    }
+
+    meteoritos.push({ 
+        x: Math.random() * canvas.width, 
+        y: -tamanho, 
+        tamanho, 
+        velocidade,
+        imagem: imagemSelecionada, // Armazena a imagem do meteorito
+        escala: 1
+    });
+}
+
+// Inicie o temporizador
+setInterval(() => {
+    spawnMeteorito4 = true; // Ative o spawn do imgMeteorito4
+}, 20000);
+            
+            // Adicione uma variável para armazenar as explosões
+let explosões = [];
+
+// Adicione uma função para criar uma explosão
+function criarExplosao(x, y, tamanho) {
+    explosões.push({ x, y, tamanho, tempo: 0 });
+}
+
+// Adicione uma função para atualizar as explosões
+function atualizarExplosões() {
+    for (let i = explosões.length - 1; i >= 0; i--) {
+        explosões[i].tempo++;
+        if (explosões[i].tempo > 30) {
+            explosões.splice(i, 1);
+        }
+    }
+}
+
+// Adicione uma função para desenhar as explosões
+function desenharExplosões() {
+    for (let i = 0; i < explosões.length; i++) {
+        ctx.beginPath();
+        ctx.arc(explosões[i].x, explosões[i].y, explosões[i].tamanho, 0, 2 * Math.PI);
+        ctx.fillStyle = `rgba(255, 165, 0, ${1 - explosões[i].tempo / 30})`;
+        ctx.fill();
+    }
+}
+
+            function atualizar() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    desenharNave();
+
+    for (let i = tiros.length - 1; i >= 0; i--) {
+        tiros[i].y -= tiros[i].velocidade;
+        ctx.fillStyle = '#fa0';
+        ctx.fillRect(tiros[i].x, tiros[i].y, 5, 10);
+
+        if (tiros[i].y < 0) {
+            tiros.splice(i, 1);
+        }
+    }
+
+    for (let i = meteoritos.length - 1; i >= 0; i--) {
+        meteoritos[i].y += meteoritos[i].velocidade;
+
+        // Aumente a escala do meteorito à medida que ele se aproxima do fundo da tela
+        meteoritos[i].escala = Math.min(5, 1 + (meteoritos[i].y / canvas.height) * 4);
+
+        // Desenhar o meteorito com a imagem de fundo e a escala atualizada
+        ctx.drawImage(meteoritos[i].imagem, 
+            meteoritos[i].x - (meteoritos[i].tamanho * meteoritos[i].escala) / 2, 
+            meteoritos[i].y - (meteoritos[i].tamanho * meteoritos[i].escala) / 2, 
+            meteoritos[i].tamanho * meteoritos[i].escala, 
+            meteoritos[i].tamanho * meteoritos[i].escala);
+
+        if (meteoritos[i].y > canvas.height) {
+            meteoritos.splice(i, 1);
+        }
+
+        if (Math.abs(nave.x + nave.largura/2 - (meteoritos[i].x + meteoritos[i].tamanho * meteoritos[i].escala / 2)) < (nave.largura/2 + meteoritos[i].tamanho * meteoritos[i].escala / 2) &&
+        Math.abs(nave.y + nave.altura/2 - (meteoritos[i].y + meteoritos[i].tamanho * meteoritos[i].escala / 2)) < (nave.altura/2 + meteoritos[i].tamanho * meteoritos[i].escala / 2)) {
+            gameOver();
+            return;
+        }
+    }
+
+    for (let i = tiros.length - 1; i >= 0; i--) {
+        for (let j = meteoritos.length - 1; j >= 0; j--) {
+            if (tiros[i] && meteoritos[j] &&
+                tiros[i].x > meteoritos[j].x - (meteoritos[j].tamanho * meteoritos[j].escala) / 2 &&
+                tiros[i].x < meteoritos[j].x + (meteoritos[j].tamanho * meteoritos[j].escala) / 2 &&
+                tiros[i].y > meteoritos[j].y - (meteoritos[j].tamanho * meteoritos[j].escala) / 2 &&
+                tiros[i].y < meteoritos[j].y + (meteoritos[j].tamanho * meteoritos[j].escala) / 2) {
+                criarExplosao(meteoritos[j].x, meteoritos[j].y, meteoritos[j].tamanho * meteoritos[j].escala); // Crie uma explosão no local do meteorito
+                meteoritos.splice(j, 1);
+                tiros.splice(i, 1);
+                tocarSom("somExplosao");
+            }
+        }
+    }
+    requestAnimationFrame(atualizar);
+    atualizarExplosões(); // Atualize as explosões
+    desenharExplosões(); // Desenhe as explosões
+}
+
+            
+
+            canvas.addEventListener("mousemove", function(event) {
+    nave.x = event.clientX - nave.largura / 2;
+    nave.y = event.clientY - nave.altura / 2;
+});
+
+            canvas.addEventListener("click", function(event) {
+                if (event.button === 0) criarTiro();
+            });
+
+            botaoJogar.addEventListener("click", iniciarJogo);
+            botaoReiniciar.addEventListener("click", () => {
+                gameOverScreen.style.display = "none";
+                telaInicial.style.display = "flex";
+            });
+        });
+        
+        function tocarSom(idAudio) {
+  const audio = document.getElementById(idAudio);
+  const clone = audio.cloneNode();
+  const source = audio.querySelector('source').cloneNode();
+  clone.appendChild(source);
+  clone.play();
+  clone.addEventListener("ended", () => {
+    clone.remove();
+  });
+}
+    </script>
+</body>
+</html>
