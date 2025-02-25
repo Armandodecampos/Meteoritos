@@ -237,7 +237,7 @@ function criarMeteorito() {
     let tipoMeteorito;
     
     // Aumente a probabilidade de o imgMeteorito4 ser escolhido
-    if (spawnMeteorito4 && Math.random() < 0.07) { // 5% de chance de escolher o imgMeteorito4
+    if (spawnMeteorito4 && Math.random() < 0.05) { // 5% de chance de escolher o imgMeteorito4
         tipoMeteorito = 3; // Escolha o imgMeteorito4
     } else {
         tipoMeteorito = Math.floor(Math.random() * 3); // Escolhe aleatoriamente entre 0, 1 e 2
