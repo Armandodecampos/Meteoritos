@@ -384,6 +384,20 @@ function desenharExplosões() {
     clone.remove();
   });
 }
+
+let posY = 0;
+
+function animarFundo() {
+    posY += 2; // Velocidade do movimento (aumente para acelerar)
+    document.getElementById('canvas').style.backgroundPosition = `0px ${posY}px`;
+    requestAnimationFrame(animarFundo);
+}
+
+// Iniciar a animação quando o jogo começar
+botaoJogar.addEventListener("click", () => {
+    animarFundo();
+});
+
     </script>
 </body>
 </html>
