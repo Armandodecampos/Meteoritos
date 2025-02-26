@@ -66,6 +66,13 @@
     <div id="telaInicial">
         <h1>Viajem veloz</h1>
         <button class="btn" id="botaoJogar">Jogar</button>
+        <br>
+        <br>
+        <br>
+        <br>
+        <!-- Controle de Volume -->
+    <label for="controleVolume" style="color: white;">Volume:</label>
+    <input type="range" id="controleVolume" min="0" max="1" step="0.05" value="1">
     </div>
 
     <div id="gameOverScreen">
@@ -399,5 +406,31 @@ botaoJogar.addEventListener("click", () => {
 });
 
     </script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const controleVolume = document.getElementById("controleVolume");
+    const audios = document.querySelectorAll("audio");
+
+    // Função para atualizar o volume de todos os áudios
+    function atualizarVolume(volume) {
+        audios.forEach(audio => {
+            audio.volume = volume;
+        });
+        localStorage.setItem("volumeJogo", volume); // Salva a configuração
+    }
+
+    // Carregar volume salvo no localStorage
+    const volumeSalvo = localStorage.getItem("volumeJogo");
+    if (volumeSalvo !== null) {
+        controleVolume.value = volumeSalvo;
+        atualizarVolume(volumeSalvo);
+    }
+
+    // Atualizar volume ao mover o slider
+    controleVolume.addEventListener("input", function() {
+        atualizarVolume(this.value);
+    });
+});
+</script>
 </body>
 </html>
