@@ -127,7 +127,7 @@ const imgMeteorito3 = new Image();
 imgMeteorito3.src = 'https://dl.dropbox.com/scl/fi/eykn1h672rzq22wq4widf/meteorito_3.png?rlkey=zg55j6dytmerfutkk34tni4ht&st=2j0qh9ys&dl=0';
 
 const imgMeteorito4 = new Image();
-imgMeteorito4.src = 'https://dl.dropbox.com/scl/fi/u16o490u0stcf6b4gjn5l/pngtree-metallic-ufo-flying-saucer-png-image_14239022.png?rlkey=ts72ui1eh6tc3uj9sdc7bnx11&st=0gfqvhfg&dl=0';
+imgMeteorito4.src = 'https://dl.dropbox.com/scl/fi/yf4zjhr61m0tr6mrsc8sg/asteroid_2.png?rlkey=kc4uewaq95v7hbn7q0hz66cwt&st=vwt1vnr6&dl=0';
 
   // Carregar a imagem da nave
   const imgNave = new Image();
@@ -142,14 +142,18 @@ imgMeteorito4.src = 'https://dl.dropbox.com/scl/fi/u16o490u0stcf6b4gjn5l/pngtree
   let aumentandoVelocidade = true;
 
   function iniciarJogo() {
-    document.getElementById("musicaMenu").pause();
+     document.getElementById("musicaMenu").pause();
     telaInicial.style.display = "none";
     gameOverScreen.style.display = "none";
     canvas.style.display = "block";
     contador.style.display = "block";
 
+    // Ajusta o tamanho do canvas com base na janela
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+
+    // Calcula o número de meteoritos com base no tamanho da tela
+    let numeroMeteoritos = Math.floor((canvas.width * canvas.height) / 50000); // Aumente ou diminua o valor de 10000 para ajustar a quantidade de meteoritos
 
     nave = { x: canvas.width / 2, y: canvas.height / 2, largura: 50, altura: 50 };
     tiros = [];
@@ -158,7 +162,14 @@ imgMeteorito4.src = 'https://dl.dropbox.com/scl/fi/u16o490u0stcf6b4gjn5l/pngtree
     velocidadeBase = velocidadeMinima;
     tempo = 0;
     intervaloSpawn = 1000;
+
+    // Cria meteoritos de acordo com a quantidade calculada
+    for (let i = 0; i < numeroMeteoritos; i++) {
+        criarMeteorito(); // Cria o meteorito inicial
+    }
+
     document.getElementById("musicaFundo").play();
+
 
     // Atualiza a velocidade ao longo do tempo
     setInterval(() => {
@@ -216,31 +227,44 @@ imgMeteorito4.src = 'https://dl.dropbox.com/scl/fi/u16o490u0stcf6b4gjn5l/pngtree
   }
 
   function desenharNave() {
+    // Aqui, ajustamos a posição da nave com base no mouse
+    let mouseX = nave.x;
+    let mouseY = nave.y;
+
+    // A nave estará centralizada no ponto do mouse
     let escala = 1 + (nave.y / canvas.height); // Calcule a escala com base na posição y da nave
     escala = Math.min(2, escala); // Limite a escala para evitar que a nave cresça demais
 
     ctx.drawImage(imgNave, 
-        nave.x - (nave.largura * escala) / 2, 
-        nave.y - (nave.altura * escala) / 2, 
+        mouseX - (nave.largura * escala) / 2, 
+        mouseY - (nave.altura * escala) / 2, 
         nave.largura * escala, 
         nave.altura * escala);
 }
+
+document.addEventListener('mousemove', function(event) {
+    // Captura as posições x e y do mouse em relação ao canvas
+    nave.x = event.clientX;
+    nave.y = event.clientY;
+});
+
+
+
             function criarTiro() {
-                tiros.push({
-                    x: nave.x + nave.largura / 2,
-                    y: nave.y,
-                    velocidade: 5
-                });
-                 tocarSom("somTiro");
-            }
+    tiros.push({
+        x: nave.x,  // O tiro sai diretamente da posição x do mouse
+        y: nave.y,  // O tiro sai diretamente da posição y do mouse
+        velocidade: 5
+    });
+    tocarSom("somTiro");
+}
+
 
 
 // Adicione uma variável para controlar o tempo de spawn do imgMeteorito4
 let spawnMeteorito4 = false;
 
 function criarMeteorito() {
-    let tamanho = Math.random() * 20 + 10; // Tamanho inicial do meteorito
-    let velocidade = Math.random() * 2 + velocidadeBase;
     let tipoMeteorito;
     
     // Aumente a probabilidade de o imgMeteorito4 ser escolhido
@@ -249,7 +273,16 @@ function criarMeteorito() {
     } else {
         tipoMeteorito = Math.floor(Math.random() * 3); // Escolhe aleatoriamente entre 0, 1 e 2
     }
-    
+
+    // Tamanho inicial do meteorito
+    let tamanho;
+    if (tipoMeteorito === 3) {
+        tamanho = Math.random() * 60 + 40; // Meteorito 4 maior
+    } else {
+        tamanho = Math.random() * 20 + 10; // Outros meteoritos menores
+    }
+
+    let velocidade = Math.random() * 2 + velocidadeBase;
     let imagemSelecionada;
 
     // Atribuir a imagem do meteorito com base no valor aleatório
@@ -272,6 +305,7 @@ function criarMeteorito() {
         escala: 1
     });
 }
+
 
 // Inicie o temporizador
 setInterval(() => {
@@ -310,6 +344,7 @@ function desenharExplosões() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     desenharNave();
 
+    // Atualiza a posição dos tiros
     for (let i = tiros.length - 1; i >= 0; i--) {
         tiros[i].y -= tiros[i].velocidade;
         ctx.fillStyle = '#fa0';
@@ -320,6 +355,7 @@ function desenharExplosões() {
         }
     }
 
+    // Atualiza a posição dos meteoritos
     for (let i = meteoritos.length - 1; i >= 0; i--) {
         meteoritos[i].y += meteoritos[i].velocidade;
 
@@ -333,17 +369,24 @@ function desenharExplosões() {
             meteoritos[i].tamanho * meteoritos[i].escala, 
             meteoritos[i].tamanho * meteoritos[i].escala);
 
-        if (meteoritos[i].y > canvas.height) {
-            meteoritos.splice(i, 1);
+        // Verifica colisão entre nave e meteoritos
+let fatorDeColisao = 0.7; // 70% do tamanho original para a colisão
+        if (Math.abs(nave.x + nave.largura / 2 - (meteoritos[i].x + meteoritos[i].tamanho * meteoritos[i].escala / 2)) < (nave.largura / 2 + meteoritos[i].tamanho * meteoritos[i].escala / 2) * fatorDeColisao &&
+            Math.abs(nave.y + nave.altura / 2 - (meteoritos[i].y + meteoritos[i].tamanho * meteoritos[i].escala / 2)) < (nave.altura / 2 + meteoritos[i].tamanho * meteoritos[i].escala / 2) * fatorDeColisao) {
+
+            // Chama a função gameOver assim que a colisão for detectada
+            gameOver();
+            return; // Não continua o loop após o game over
         }
 
-        if (Math.abs(nave.x + nave.largura/2 - (meteoritos[i].x + meteoritos[i].tamanho * meteoritos[i].escala / 2)) < (nave.largura/2 + meteoritos[i].tamanho * meteoritos[i].escala / 2) &&
-        Math.abs(nave.y + nave.altura/2 - (meteoritos[i].y + meteoritos[i].tamanho * meteoritos[i].escala / 2)) < (nave.altura/2 + meteoritos[i].tamanho * meteoritos[i].escala / 2)) {
-            gameOver();
-            return;
+
+        // Verifica se o meteorito saiu da tela
+        if (meteoritos[i].y > canvas.height + meteoritos[i].tamanho) {
+            meteoritos.splice(i, 1);
         }
     }
 
+    // Verifica colisão entre tiros e meteoritos
     for (let i = tiros.length - 1; i >= 0; i--) {
         for (let j = meteoritos.length - 1; j >= 0; j--) {
             if (tiros[i] && meteoritos[j] &&
@@ -358,6 +401,7 @@ function desenharExplosões() {
             }
         }
     }
+
     requestAnimationFrame(atualizar);
     atualizarExplosões(); // Atualize as explosões
     desenharExplosões(); // Desenhe as explosões
@@ -395,7 +439,7 @@ function desenharExplosões() {
 let posY = 0;
 
 function animarFundo() {
-    posY += 2; // Velocidade do movimento (aumente para acelerar)
+    posY += 0.2; // Velocidade do movimento (aumente para acelerar)
     document.getElementById('canvas').style.backgroundPosition = `0px ${posY}px`;
     requestAnimationFrame(animarFundo);
 }
